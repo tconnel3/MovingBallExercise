@@ -8,13 +8,17 @@
 #include <thread>
 
 #define MAX_LOADSTRING 100
-#define BTN_PLAY 101
-#define BTN_PAUSE 102
+#define BTN_PLAY 101                            //Play button definition
+#define BTN_PAUSE 102                           //Pause button definition
+
 // Global Variables:
 HINSTANCE hInst;                                // current instance
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
-BOOL animPause = false;
+BOOL animPause = false;                         // A boolean tracking whether or not the animation should be paused
+BOOL termFlag = false;                          // A boolean to see if the thread should be terminated
+HANDLE wThread;                                 // The thread being declared globally
+DWORD threadID;                                 // The thread ID for creating a thread using win32
 
 
 // Ball coordinates struct
@@ -138,6 +142,10 @@ DWORD WINAPI CalcPositions(LPVOID lpParam)
 
     while (1)
     {
+        if (termFlag == TRUE)
+        {
+            ExitThread(threadID); //ExitThread is used because of the thread handle
+        }
 
         //If the ball 'touches' one of the vertical bounds, reverse the vertical trajectory
         if ((top <= 0 && yDist < 0)|| (bottom >= 300 && yDist > 0))
@@ -182,6 +190,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
        CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
 
+
+   //Create the 'play' button
    CreateWindowEx(
        0,
        L"Button",
@@ -196,6 +206,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
        GetModuleHandle(NULL),
        NULL);
 
+   //Create the 'pause' button
    CreateWindowEx(
        0,
        L"Button",
@@ -210,16 +221,14 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
        GetModuleHandle(NULL),
        NULL);
 
-   RECT rect;
-   GetWindowRect(hWnd, &rect);
+   //RECT rect;
+   //GetWindowRect(hWnd, &rect);
 
    //Set a timer that updates every 1 second
    SetTimer(hWnd, 1, 33, NULL);
 
 
    //Create the thread
-   HANDLE wThread;                                
-   DWORD threadID;
    wThread = CreateThread(NULL, 0, CalcPositions, NULL, 0, &threadID);
   
    
@@ -240,7 +249,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //
 //  PURPOSE: Processes messages for the main window.
 //
-//  WM_COMMAND  - process the application menu
+//  WM_COMMAND  - process the application menu and buttons
 //  WM_TIMER    - erase previous painted shape
 //  WM_PAINT    - Paint the main window
 //  WM_DESTROY  - post a quit message and return
@@ -261,8 +270,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 
                 break;
             case IDM_EXIT:
+                termFlag = true; //On exit, set termFlag to true so the thread will exit and join the main thread
                 DestroyWindow(hWnd);
-
                 break;
             case BTN_PLAY:
                 animPause = false;
