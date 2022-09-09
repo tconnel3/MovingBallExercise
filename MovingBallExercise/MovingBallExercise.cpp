@@ -144,7 +144,7 @@ DWORD WINAPI CalcPositions(LPVOID lpParam)
     {
         if (termFlag == TRUE)
         {
-            ExitThread(threadID); //ExitThread is used because of the thread handle
+            ExitThread(threadID); //ExitThread is used by win32 to make sure the thread is closed down and with the main thread
         }
 
         //If the ball 'touches' one of the vertical bounds, reverse the vertical trajectory
@@ -221,15 +221,28 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
        GetModuleHandle(NULL),
        NULL);
 
-   //RECT rect;
-   //GetWindowRect(hWnd, &rect);
-
    //Set a timer that updates every 1 second
    SetTimer(hWnd, 1, 33, NULL);
 
 
    //Create the thread
    wThread = CreateThread(NULL, 0, CalcPositions, NULL, 0, &threadID);
+
+   if (wThread == nullptr) // if the thread is not created
+   {
+       //Create a dialog box with yes or no as options
+       int msgboxID = MessageBox(
+           NULL,
+           L"Thread not created",
+           L"Continue?",
+           MB_ICONEXCLAMATION | MB_YESNO
+       );
+
+       if (msgboxID == IDNO) // if yes, destroy the window
+       {
+          DestroyWindow(hWnd);
+       }
+   }
   
    
 
@@ -271,6 +284,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 break;
             case IDM_EXIT:
                 termFlag = true; //On exit, set termFlag to true so the thread will exit and join the main thread
+                WaitForSingleObject(wThread, 100); //Wait for the thread to exit
                 DestroyWindow(hWnd);
                 break;
             case BTN_PLAY:
