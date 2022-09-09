@@ -126,7 +126,7 @@ DWORD WINAPI CalcPositions(LPVOID lpParam)
 {
 
     //These four variables define the ball's start postion
-    //They'll be updated as the loop iterates
+    //They will be updated as the loop iterates
     int left = 15;
     int top = 15;
     int right = 30;
@@ -140,7 +140,7 @@ DWORD WINAPI CalcPositions(LPVOID lpParam)
     int yDist = 3;
     int xDist = 3;
 
-    while (1)
+    while (TRUE)
     {
         if (termFlag == TRUE)
         {
@@ -221,11 +221,11 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
        GetModuleHandle(NULL),
        NULL);
 
-   //Set a timer that updates every 1 second
+   //Set a timer that updates at 30 Hz
    SetTimer(hWnd, 1, 33, NULL);
 
 
-   //Create the thread
+   //Create the thread with the win32 API function CreateThread
    wThread = CreateThread(NULL, 0, CalcPositions, NULL, 0, &threadID);
 
    if (wThread == nullptr) // if the thread is not created
@@ -238,7 +238,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
            MB_ICONEXCLAMATION | MB_YESNO
        );
 
-       if (msgboxID == IDNO) // if yes, destroy the window
+       if (msgboxID == IDNO) // if no, destroy the window
        {
           DestroyWindow(hWnd);
        }
@@ -284,14 +284,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 break;
             case IDM_EXIT:
                 termFlag = true; //On exit, set termFlag to true so the thread will exit and join the main thread
-                WaitForSingleObject(wThread, 100); //Wait for the thread to exit
+                WaitForSingleObject(wThread, INFINITE); //Wait for the thread to exit
+                CloseHandle(wThread); //Insures the handle is not in use and is closed down
                 DestroyWindow(hWnd);
                 break;
             case BTN_PLAY:
-                animPause = false;
+                animPause = false; //If the play button is pressed, set the pause flag to false
                 break;
             case BTN_PAUSE:
-                animPause = true;
+                animPause = true; //If the pause button is pressed, set the pause flag to true
                 break;
             default:
                 return DefWindowProc(hWnd, message, wParam, lParam);
@@ -301,11 +302,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     case WM_TIMER:
         {
-            if (!animPause)
+            if (!animPause) //If the pause flag is true
             {
-                InvalidateRect(hWnd, NULL, TRUE);
+                InvalidateRect(hWnd, NULL, TRUE); //Erase the current drawing
             }   
-            
+            //No break is used so the the WM_PAINT case runs
         }
         
     case WM_PAINT:
